@@ -14,18 +14,20 @@
   {
     "user_id": "athlete-42",
     "exercise_id": "isometric-elbow-flexion",
+    "profile": "healthy",
     "reps": 10,
     "success": true,
     "metrics": {"twitch": 0.41, "snr": 18.2},
     "extended": false
   }
   ```
+- **Параметри**: необов'язкове поле `profile` дозволяє розрізняти статистику для різних клінічних сценаріїв (значення за замовчуванням — `"default"`).
 - **Відповідь**: підтвердження запису, оновлені агрегати.
 
 ### `GET /policy/best/{user_id}/{exercise_id}`
 - **Призначення**: отримати топ-`k` рекомендацій (Laplace-smoothed).
 - **Параметри**: `k` (за замовчуванням 3), `profile` (`healthy`, `myasthenia`, ...).
-- **Відповідь**:
+- **Відповідь** (JSON):
   ```json
   {
     "user_id": "athlete-42",

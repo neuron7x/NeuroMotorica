@@ -25,9 +25,22 @@ def test_cli_plot_creates_files():
 def test_api_roundtrip():
     client = TestClient(fastapi_app)
     r = client.post("/policy/outcome", json={
-        "user_id": "u1", "exercise_id": "squat", "cue_text": "Тримай темп", "success": True
+        "user_id": "u1",
+        "exercise_id": "squat",
+        "cue_text": "Тримай темп",
+        "success": True,
+        "profile": "healthy",
     })
     assert r.status_code == 200
-    r2 = client.get("/policy/best/u1/squat?k=3")
+    r2 = client.get("/policy/best/u1/squat", params={"k": 3, "profile": "healthy"})
     assert r2.status_code == 200
-    assert isinstance(r2.json(), list)
+    payload = r2.json()
+    assert payload["user_id"] == "u1"
+    assert payload["exercise_id"] == "squat"
+    assert isinstance(payload["recommendations"], list)
+    assert payload["recommendations"][0]["cue"] == "Тримай темп"
+
+    # Ensure profile-specific filtering keeps namespaces isolated
+    r3 = client.get("/policy/best/u1/squat", params={"k": 3, "profile": "post-op"})
+    assert r3.status_code == 200
+    assert r3.json()["recommendations"] == []
