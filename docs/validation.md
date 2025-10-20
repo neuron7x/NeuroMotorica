@@ -3,8 +3,9 @@
 Валідаційний конвеєр гарантує відповідність симуляцій публічним фізіологічним даним.
 
 ## Вхідні дані
-- CLI `neuromotorica simulate` генерує JSON-результати із серіями стимуляцій.
+- CLI `neuromotorica simulate` генерує JSON-результати із серіями стимуляцій для обраного профілю (`--profile`).
 - `sample_data/` містить приклади референсних сценаріїв для регресійних тестів.
+- Каталог `data/profiles/` містить офіційно підтримані конфігурації NMJ/м'язів.
 
 ## Метрики
 | Метрика | Опис | Джерело діапазонів |
@@ -20,7 +21,8 @@
 - Приклад виходу:
   ```json
   {
-    "profile": "healthy",
+    "profile": "baseline",
+    "profile_description": "Legacy parameterization tuned for general adult neuromuscular performance.",
     "twitch_amplitude": 0.42,
     "tetanus_ratio": 3.1,
     "failure_rate": 0.01,

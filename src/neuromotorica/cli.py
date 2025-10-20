@@ -7,6 +7,15 @@ from .models.nmj import NMJ, NMJParams
 from .models.enhanced_nmj import EnhancedNMJ, EnhancedNMJParams
 from .models.muscle import Muscle, MuscleParams
 from .analysis.validation import scenario_sim, validate_against_benchmarks
+from .profiles import available_profiles
+
+
+def _validate_profile(value: str) -> str:
+    names = {name.lower(): name for name in available_profiles()}
+    key = value.lower()
+    if key not in names:
+        raise typer.BadParameter(f"Unknown profile '{value}'. Choose from {', '.join(available_profiles())}")
+    return names[key]
 
 app = typer.Typer(help="NeuroMotorica CLI")
 
@@ -43,18 +52,22 @@ def validate_model(seconds: float = typer.Option(1.0, "--seconds", min=0.2, help
     print(res)
 
 @app.command(name="simulate")
-def simulate(seconds: float = 1.0, units: int = 64, rate: float = 10.0):
+def simulate(seconds: float = 1.0, units: int = 64, rate: float = 10.0,
+             profile: str = typer.Option("baseline", "--profile", "-p", callback=_validate_profile,
+                                         help=f"Simulation profile ({', '.join(available_profiles())})")):
     dt = 0.001
-    out = scenario_sim(seconds=seconds, dt=dt, units=units, rate_hz=rate)
+    out = scenario_sim(seconds=seconds, dt=dt, units=units, rate_hz=rate, profile=profile)
     # Validate
     val = validate_against_benchmarks(out, "data/benchmarks/physio_ranges.json")
     res = {"scenarios": out, "validation": val}
     print(json.dumps(res, ensure_ascii=False, indent=2))
 
 @app.command(name="plot")
-def plot(seconds: float = 1.0, units: int = 64, rate: float = 10.0, outdir: str = "outputs"):
+def plot(seconds: float = 1.0, units: int = 64, rate: float = 10.0, outdir: str = "outputs",
+         profile: str = typer.Option("baseline", "--profile", "-p", callback=_validate_profile,
+                                     help=f"Simulation profile ({', '.join(available_profiles())})")):
     from .analysis.viz import plot_scenarios
-    files = plot_scenarios(outdir=outdir, seconds=seconds, units=units, rate_hz=rate)
+    files = plot_scenarios(outdir=outdir, seconds=seconds, units=units, rate_hz=rate, profile=profile)
     print(json.dumps({"saved": files}, ensure_ascii=False))
 
 @app.command(name="run-api")
@@ -68,8 +81,11 @@ if __name__ == "__main__":
 
 @app.command(name="simulate-extended")
 def simulate_extended_cmd(seconds: float = 1.0, units: int = 64, rate: float = 10.0,
-                          noise_sigma: float = 0.05, glial_gain: float = 0.25, topography: float = 1.2):
+                          noise_sigma: float = 0.05, glial_gain: float = 0.25, topography: float = 1.2,
+                          profile: str = typer.Option("baseline", "--profile", "-p", callback=_validate_profile,
+                                                      help=f"Simulation profile ({', '.join(available_profiles())})")):
     from .analysis.extended_validation import simulate_extended
     out = simulate_extended(seconds=seconds, dt=0.001, units=units, rate_hz=rate,
-                            noise_sigma=noise_sigma, glial_gain=glial_gain, topo_factor=topography)
+                            noise_sigma=noise_sigma, glial_gain=glial_gain, topo_factor=topography,
+                            profile=profile)
     print(json.dumps(out, ensure_ascii=False))

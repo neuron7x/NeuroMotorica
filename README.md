@@ -15,7 +15,7 @@
 4. **Adapt** — моніторинг, валідація, оновлення параметрів.
 
 ## Можливості
-- **Симуляції**: сценарії одиночних імпульсів, пуассонівські та пачкові режими.
+- **Симуляції**: сценарії одиночних імпульсів, пуассонівські та пачкові режими з профілями `data/profiles/*.json`.
 - **Патології**: моделювання міастенії, ALS, каналопатій.
 - **Візуалізація**: CLI-команди `plot`, `run-demo`, генерація графіків у `outputs/`.
 - **Валідація**: автоматична перевірка проти діапазонів у `data/benchmarks/physio_ranges.json`.
@@ -33,14 +33,14 @@ pip install -e ".[dev]"
 
 ### Типові сценарії
 ```bash
-# Симуляція моторних одиниць з валідацією
-neuromotorica simulate --seconds 1.0 --units 64 --rate 10
+# Симуляція моторних одиниць з валідацією та вибором профілю
+neuromotorica simulate --seconds 1.0 --units 64 --rate 10 --profile baseline
 
 # Порівняння моделі з ко-трансмісією проти базової
 neuromotorica validate-model --seconds 2.0 --rate 25
 
-# Візуалізація активності та сили у каталозі outputs/
-neuromotorica plot --seconds 1.0 --units 64 --rate 10 --outdir outputs
+# Візуалізація активності та сили у каталозі outputs/ для профілю реабілітації
+neuromotorica plot --seconds 1.0 --units 64 --rate 10 --outdir outputs --profile rehab
 
 # Демо-петля (сенсорика → рекомендації)
 neuromotorica run-demo --data sample_data/mock_reps.json
@@ -80,7 +80,7 @@ mypy src
 ## Дані та валідація
 - Еталонні діапазони: `data/benchmarks/physio_ranges.json`.
 - Метрики: twitch amplitude, tetanus ratio, SNR, failure rate.
-- Автозвіт CLI `simulate` із JSON-виходом для аналізу.
+- Автозвіт CLI `simulate` із JSON-виходом для аналізу (конфіг включає обраний профіль).
 
 ## Контрибуція
 Будь ласка, ознайомтеся з `CONTRIBUTING.md`, використовуйте семантичні заголовки PR та підтримуйте 100% прохідність CI.

@@ -17,6 +17,11 @@ mkdocs serve
 ```
 Перейдіть на `http://127.0.0.1:8000/` для локального перегляду.
 
+## Профілі симуляцій
+- Конфігурації NMJ/м'язів зберігаються у `data/profiles/*.json`.
+- CLI-команди `simulate`, `plot` та `simulate-extended` приймають прапорець `--profile`.
+- Приклади призначень профілів зібрано у `sample_data/profiles_catalog.json`.
+
 ## Структура документації
 - **Core Simulation**: модель, алгоритми, оптимізація.
 - **Validation & Evaluation**: методи перевірки результатів.

@@ -2,9 +2,10 @@ from __future__ import annotations
 import time, json, pathlib
 import numpy as np
 from numpy.typing import NDArray
-from ..models.nmj import NMJ, NMJParams
-from ..models.enhanced_nmj import EnhancedNMJ, EnhancedNMJParams, OptimizedEnhancedNMJ
-from ..models.muscle import Muscle, MuscleParams
+from ..models.nmj import NMJ
+from ..models.enhanced_nmj import EnhancedNMJ, OptimizedEnhancedNMJ
+from ..models.muscle import Muscle
+from ..profiles import build_profile_params
 from ..models.pool import Pool
 
 def twitch_metrics(force: NDArray[np.float64], dt: float, window_s: float = 0.3) -> dict:
@@ -36,12 +37,10 @@ def twitch_metrics(force: NDArray[np.float64], dt: float, window_s: float = 0.3)
     return {"time_to_peak_ms": round(ttp, 2), "half_relaxation_time_ms": round(half_rel, 2),
             "peak_force_N": round(peak, 3), "contraction_velocity_Ns": round(contr_vel, 3)}
 
-def scenario_sim(seconds: float = 1.0, dt: float = 0.001, units: int = 64, rate_hz: float = 10.0, seed: int = 42) -> dict:
+def scenario_sim(seconds: float = 1.0, dt: float = 0.001, units: int = 64, rate_hz: float = 10.0,
+                 seed: int = 42, profile: str = "baseline") -> dict:
     pool = Pool(units=units, dt=dt, T=seconds)
-    nmjp = NMJParams()
-    enhp = EnhancedNMJParams(quantal_content=1.2, tau_rise=0.005, tau_decay=0.045, ach_decay=0.025,
-                             co_transmission=True, ach_ratio=0.7, histamine_ratio=0.3, modulation_gain=1.2)
-    mp = MuscleParams(F_max=1200.0, mu_size_ratio=35.0, tau_act=0.012, tau_deact=0.045)
+    nmjp, enhp, mp, meta = build_profile_params(profile)
     nmj = NMJ(nmjp, dt, seconds)
     enm = EnhancedNMJ(enhp, dt, seconds)
     onmj = OptimizedEnhancedNMJ(enhp, dt, seconds)
@@ -75,7 +74,14 @@ def scenario_sim(seconds: float = 1.0, dt: float = 0.001, units: int = 64, rate_
     fusion_freq = 1.0 / (mp.tau_act + mp.tau_deact)
 
     return {
-        "config": {"seconds": seconds, "dt": dt, "units": units, "rate_hz": rate_hz},
+        "config": {
+            "seconds": seconds,
+            "dt": dt,
+            "units": units,
+            "rate_hz": rate_hz,
+            "profile": profile,
+            "profile_description": meta.get("description", ""),
+        },
         "runtime": {"single_spike_sec": round(single_runtime, 4)},
         "single_spike": {"twitch": twitch_metrics(Fo0, dt), "fusion_frequency_Hz": round(fusion_freq, 3),
                          "forces_N": {"baseline": float(np.max(Fb0)), "enhanced": float(np.max(Fe0)), "optimized": float(np.max(Fo0))}},

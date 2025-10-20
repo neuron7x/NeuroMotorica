@@ -5,17 +5,16 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from ..models.pool import Pool
-from ..models.nmj import NMJ, NMJParams
-from ..models.enhanced_nmj import EnhancedNMJ, EnhancedNMJParams, OptimizedEnhancedNMJ
-from ..models.muscle import Muscle, MuscleParams
+from ..models.nmj import NMJ
+from ..models.enhanced_nmj import EnhancedNMJ, OptimizedEnhancedNMJ
+from ..models.muscle import Muscle
+from ..profiles import build_profile_params
 
-def plot_scenarios(outdir: str = "outputs", seconds: float = 1.0, dt: float = 0.001, units: int = 64, rate_hz: float = 10.0, seed: int = 42) -> dict:
+def plot_scenarios(outdir: str = "outputs", seconds: float = 1.0, dt: float = 0.001, units: int = 64,
+                   rate_hz: float = 10.0, seed: int = 42, profile: str = "baseline") -> dict:
     od = pathlib.Path(outdir); od.mkdir(parents=True, exist_ok=True)
     pool = Pool(units=units, dt=dt, T=seconds)
-    nmjp = NMJParams()
-    enhp = EnhancedNMJParams(quantal_content=1.2, tau_rise=0.005, tau_decay=0.045, ach_decay=0.025,
-                             co_transmission=True, ach_ratio=0.7, histamine_ratio=0.3, modulation_gain=1.2)
-    mp = MuscleParams(F_max=1200.0, mu_size_ratio=35.0, tau_act=0.012, tau_deact=0.045)
+    nmjp, enhp, mp, _ = build_profile_params(profile)
     nmj = NMJ(nmjp, dt, seconds)
     enm = EnhancedNMJ(enhp, dt, seconds)
     onmj = OptimizedEnhancedNMJ(enhp, dt, seconds)

@@ -1,0 +1,19 @@
+{
+  "profiles": [
+    {
+      "name": "baseline",
+      "description": "Legacy parameterization tuned for general adult neuromuscular performance.",
+      "intended_use": "Default simulations and documentation walkthroughs"
+    },
+    {
+      "name": "rehab",
+      "description": "Slower recovery profile representative of early-stage rehabilitation cohorts.",
+      "intended_use": "Clinical what-if analysis and conservative load testing"
+    },
+    {
+      "name": "elite",
+      "description": "High throughput profile emulating elite athlete neuromuscular characteristics.",
+      "intended_use": "Stress testing and elite athlete planning"
+    }
+  ]
+}
