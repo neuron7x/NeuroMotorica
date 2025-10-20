@@ -122,11 +122,9 @@ class ExtendedOptimizedNMJ(OptimizedEnhancedNMJ):
         clipped = np.clip(noisy, 0.0, 1.2)
 
         spike_total = int(np.count_nonzero(spikes))
-        diffs = np.diff(clipped, axis=1)
-        drop_events = int(np.count_nonzero(diffs < -0.1))
         failure_rate = 0.0
         if spike_total > 0:
-            failure_rate = min((failure_count + drop_events) / spike_total, 1.0)
+            failure_rate = min(failure_count / spike_total, 1.0)
 
         m = float(np.mean(clipped))
         s = float(np.std(clipped)) or 1e-9
