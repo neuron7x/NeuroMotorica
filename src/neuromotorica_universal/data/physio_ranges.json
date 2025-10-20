@@ -1,0 +1,8 @@
+{
+  "force_norm": {
+    "min": 0.0,
+    "max": 1.0
+  },
+  "thr_rep": 0.8,
+  "tempo_default_bpm": 30
+}
