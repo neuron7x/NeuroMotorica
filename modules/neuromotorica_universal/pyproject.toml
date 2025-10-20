@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neuromotorica-universal"
+version = "0.1.0"
+description = "Universal module for NeuroMotorica: NMJ simulation, coach policy (UCB1), and FastAPI /v1 API."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Ярослав", email = "noreply@example.com" }]
+dependencies = ["fastapi>=0.115.0","uvicorn>=0.30.0","pydantic>=2.7.0","numpy>=1.24.0"]
+[project.optional-dependencies]
+dev = ["pytest>=8.2.0","pytest-cov>=5.0.0","httpx>=0.27.0"]
+[tool.pytest.ini_options]
+addopts = "--cov=neuromotorica_universal --cov-report=term-missing --cov-fail-under=95 -q"
+[project.scripts]
+nmux-api = "neuromotorica_universal.api.app:run"

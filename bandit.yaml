@@ -1,0 +1,2 @@
+exclude_dirs: ["modules/neuromotorica_universal/tests"]
+skips: []
