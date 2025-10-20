@@ -1,12 +1,16 @@
 from __future__ import annotations
-import json, typer
+
+import json
+import typer
 from rich import print
+
+from .analysis.profiling import profile_simulation
+from .analysis.validation import scenario_sim, validate_against_benchmarks
 from .edge.coach_loop import run_demo as run_demo_impl
-from .models.pool import Pool
-from .models.nmj import NMJ, NMJParams
 from .models.enhanced_nmj import EnhancedNMJ, EnhancedNMJParams
 from .models.muscle import Muscle, MuscleParams
-from .analysis.validation import scenario_sim, validate_against_benchmarks
+from .models.nmj import NMJ, NMJParams
+from .models.pool import Pool
 from .profiles import available_profiles
 
 
@@ -14,10 +18,25 @@ def _validate_profile(value: str) -> str:
     names = {name.lower(): name for name in available_profiles()}
     key = value.lower()
     if key not in names:
-        raise typer.BadParameter(f"Unknown profile '{value}'. Choose from {', '.join(available_profiles())}")
+        typer.echo(
+            f"Unknown profile '{value}'. Choose from {', '.join(available_profiles())}",
+            err=False,
+        )
+        raise typer.BadParameter(
+            f"Unknown profile '{value}'. Choose from {', '.join(available_profiles())}"
+        )
     return names[key]
 
+def _validate_fft_threshold(value: int | None) -> int | None:
+    if value is None:
+        return None
+    if value <= 0:
+        raise typer.BadParameter("FFT threshold must be a positive integer")
+    return value
+
 app = typer.Typer(help="NeuroMotorica CLI")
+optimize_app = typer.Typer(help="Profiling and optimisation utilities")
+app.add_typer(optimize_app, name="optimize")
 
 @app.command(name="run-demo")
 def run_demo(data: str = typer.Option("sample_data/mock_reps.json", "--data", help="Path to rep events JSON")):
@@ -52,22 +71,67 @@ def validate_model(seconds: float = typer.Option(1.0, "--seconds", min=0.2, help
     print(res)
 
 @app.command(name="simulate")
-def simulate(seconds: float = 1.0, units: int = 64, rate: float = 10.0,
-             profile: str = typer.Option("baseline", "--profile", "-p", callback=_validate_profile,
-                                         help=f"Simulation profile ({', '.join(available_profiles())})")):
+def simulate(
+    seconds: float = 1.0,
+    units: int = 64,
+    rate: float = 10.0,
+    profile: str = typer.Option(
+        "baseline",
+        "--profile",
+        "-p",
+        callback=_validate_profile,
+        help=f"Simulation profile ({', '.join(available_profiles())})",
+    ),
+    fft_threshold: int | None = typer.Option(
+        None,
+        "--fft-threshold",
+        callback=_validate_fft_threshold,
+        help="Sample count threshold for switching to FFT convolution (auto when omitted)",
+    ),
+):
     dt = 0.001
-    out = scenario_sim(seconds=seconds, dt=dt, units=units, rate_hz=rate, profile=profile)
+    out = scenario_sim(
+        seconds=seconds,
+        dt=dt,
+        units=units,
+        rate_hz=rate,
+        profile=profile,
+        fft_threshold=fft_threshold,
+    )
     # Validate
     val = validate_against_benchmarks(out, "data/benchmarks/physio_ranges.json")
     res = {"scenarios": out, "validation": val}
     print(json.dumps(res, ensure_ascii=False, indent=2))
 
 @app.command(name="plot")
-def plot(seconds: float = 1.0, units: int = 64, rate: float = 10.0, outdir: str = "outputs",
-         profile: str = typer.Option("baseline", "--profile", "-p", callback=_validate_profile,
-                                     help=f"Simulation profile ({', '.join(available_profiles())})")):
+def plot(
+    seconds: float = 1.0,
+    units: int = 64,
+    rate: float = 10.0,
+    outdir: str = "outputs",
+    profile: str = typer.Option(
+        "baseline",
+        "--profile",
+        "-p",
+        callback=_validate_profile,
+        help=f"Simulation profile ({', '.join(available_profiles())})",
+    ),
+    fft_threshold: int | None = typer.Option(
+        None,
+        "--fft-threshold",
+        callback=_validate_fft_threshold,
+        help="Sample count threshold for switching to FFT convolution (auto when omitted)",
+    ),
+):
     from .analysis.viz import plot_scenarios
-    files = plot_scenarios(outdir=outdir, seconds=seconds, units=units, rate_hz=rate, profile=profile)
+    files = plot_scenarios(
+        outdir=outdir,
+        seconds=seconds,
+        units=units,
+        rate_hz=rate,
+        profile=profile,
+        fft_threshold=fft_threshold,
+    )
     print(json.dumps({"saved": files}, ensure_ascii=False))
 
 @app.command(name="run-api")
@@ -75,17 +139,78 @@ def run_api(host: str = "127.0.0.1", port: int = 8000):
     import uvicorn
     uvicorn.run("neuromotorica.cloud.api.main:app", host=host, port=port, reload=False)
 
+@optimize_app.command(name="profile")
+def optimize_profile(
+    seconds: float = 1.0,
+    units: int = 64,
+    rate: float = 10.0,
+    repeats: int = typer.Option(5, "--repeats", min=1, help="Number of profiling repetitions"),
+    profile: str = typer.Option(
+        "baseline",
+        "--profile",
+        "-p",
+        callback=_validate_profile,
+        help=f"Simulation profile ({', '.join(available_profiles())})",
+    ),
+    fft_threshold: int | None = typer.Option(
+        None,
+        "--fft-threshold",
+        callback=_validate_fft_threshold,
+        help="Sample count threshold for switching to FFT convolution (auto when omitted)",
+    ),
+    seed: int = typer.Option(17, "--seed", help="Base random seed for profiling runs"),
+):
+    dt = 0.001
+    result = profile_simulation(
+        seconds=seconds,
+        dt=dt,
+        units=units,
+        rate_hz=rate,
+        repeats=repeats,
+        profile=profile,
+        fft_threshold=fft_threshold,
+        seed=seed,
+    )
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+
 if __name__ == "__main__":
     app()
 
 
 @app.command(name="simulate-extended")
-def simulate_extended_cmd(seconds: float = 1.0, units: int = 64, rate: float = 10.0,
-                          noise_sigma: float = 0.05, glial_gain: float = 0.25, topography: float = 1.2,
-                          profile: str = typer.Option("baseline", "--profile", "-p", callback=_validate_profile,
-                                                      help=f"Simulation profile ({', '.join(available_profiles())})")):
+def simulate_extended_cmd(
+    seconds: float = 1.0,
+    units: int = 64,
+    rate: float = 10.0,
+    noise_sigma: float = 0.05,
+    glial_gain: float = 0.25,
+    topography: float = 1.2,
+    failure_bias: float = typer.Option(0.0, "--failure-bias", help="Baseline failure probability offset"),
+    profile: str = typer.Option(
+        "baseline",
+        "--profile",
+        "-p",
+        callback=_validate_profile,
+        help=f"Simulation profile ({', '.join(available_profiles())})",
+    ),
+    fft_threshold: int | None = typer.Option(
+        None,
+        "--fft-threshold",
+        callback=_validate_fft_threshold,
+        help="Sample count threshold for switching to FFT convolution (auto when omitted)",
+    ),
+):
     from .analysis.extended_validation import simulate_extended
-    out = simulate_extended(seconds=seconds, dt=0.001, units=units, rate_hz=rate,
-                            noise_sigma=noise_sigma, glial_gain=glial_gain, topo_factor=topography,
-                            profile=profile)
+    out = simulate_extended(
+        seconds=seconds,
+        dt=0.001,
+        units=units,
+        rate_hz=rate,
+        noise_sigma=noise_sigma,
+        glial_gain=glial_gain,
+        topo_factor=topography,
+        failure_bias=failure_bias,
+        profile=profile,
+        fft_threshold=fft_threshold,
+    )
     print(json.dumps(out, ensure_ascii=False))

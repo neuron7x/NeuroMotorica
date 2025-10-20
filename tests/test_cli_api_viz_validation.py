@@ -16,6 +16,7 @@ def test_cli_simulate_and_validate_ranges(profile):
     assert result.exit_code == 0
     data = json.loads(result.stdout)
     assert data["scenarios"]["config"]["profile"] == profile
+    assert "fft_threshold" in data["scenarios"]["config"]
     assert data["validation"]["time_to_peak_in_range"]
     assert data["validation"]["half_relax_in_range"]
     assert data["validation"]["fusion_freq_in_range"]
@@ -48,6 +49,7 @@ def test_api_roundtrip():
         "reps": 12,
         "metrics": {"twitch": 0.42, "snr": 18.0},
         "extended": True,
+        "profile": "baseline",
     }
     r = client.post("/policy/outcome", json=payload)
     assert r.status_code == 200
@@ -57,9 +59,38 @@ def test_api_roundtrip():
     assert out["outcome"]["metrics"] == payload["metrics"]
     assert out["outcome"]["extended"] is True
     assert out["outcome"]["success"] == 1
-    r2 = client.get("/policy/best/u1/squat?k=3")
+    assert out["outcome"]["profile"] == payload["profile"]
+    r2 = client.get("/policy/best/u1/squat?k=3&profile=baseline")
     assert r2.status_code == 200
-    assert isinstance(r2.json(), list)
+    ranked = r2.json()
+    assert ranked["user_id"] == "u1"
+    assert ranked["exercise_id"] == "squat"
+    assert ranked["profile"] == "baseline"
+    assert isinstance(ranked["recommendations"], list)
     metrics = client.get("/metrics")
     assert metrics.status_code == 200
     assert metrics.headers.get("content-type", "").startswith("text/plain")
+
+
+def test_cli_simulate_extended_outputs_metrics():
+    result = runner.invoke(app, [
+        "simulate-extended", "--seconds", "0.3", "--units", "16", "--rate", "15",
+        "--failure-bias", "0.05"
+    ])
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+    metrics = data["metrics"]
+    assert "failure_rate" in metrics
+    assert "jitter_ms" in metrics
+    assert "cv_force" in metrics
+
+
+def test_cli_optimize_profile_command():
+    result = runner.invoke(app, [
+        "optimize", "profile", "--seconds", "0.2", "--units", "12", "--rate", "8", "--repeats", "2"
+    ])
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+    assert "metrics" in data
+    assert "runtime_ms" in data["metrics"]
+    assert isinstance(data["recommendations"], list)

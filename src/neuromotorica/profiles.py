@@ -6,12 +6,34 @@ from importlib.resources.abc import Traversable
 from dataclasses import asdict
 from functools import lru_cache
 from typing import Dict, Tuple
+import pathlib
 
 from .models.nmj import NMJParams
 from .models.enhanced_nmj import EnhancedNMJParams
 from .models.muscle import MuscleParams
 
-PROFILE_DIR = resources.files("neuromotorica") / "data" / "profiles"
+_PACKAGE_PROFILE_DIR = resources.files("neuromotorica") / "data" / "profiles"
+
+
+def _default_profile_dir() -> Traversable:
+    """Return the directory containing bundled profile definitions.
+
+    Falls back to the repository-level ``data/profiles`` directory when the
+    package data directory is unavailable (e.g. when running from a source
+    checkout without installed resources).
+    """
+
+    if _PACKAGE_PROFILE_DIR.is_dir():
+        return _PACKAGE_PROFILE_DIR
+
+    repo_root = pathlib.Path(__file__).resolve().parents[2]
+    fallback = repo_root / "data" / "profiles"
+    if fallback.is_dir():
+        return fallback
+    raise FileNotFoundError(
+        "Profile directory not found. Expected either package data at"
+        f" {_PACKAGE_PROFILE_DIR} or repository fallback at {fallback}."
+    )
 
 class ProfileNotFoundError(ValueError):
     """Raised when a requested simulation profile is unavailable."""
@@ -29,18 +51,17 @@ def _load_profile_file(path: Traversable) -> Dict:
 
 @lru_cache(maxsize=None)
 def _profiles_index() -> Dict[str, Dict]:
-    if not PROFILE_DIR.is_dir():
-        raise FileNotFoundError(f"Profile directory not found: {PROFILE_DIR}")
+    profile_dir = _default_profile_dir()
     profiles: Dict[str, Dict] = {}
     json_paths = sorted(
-        (child for child in PROFILE_DIR.iterdir() if child.name.endswith(".json")),
+        (child for child in profile_dir.iterdir() if child.name.endswith(".json")),
         key=lambda traversable: traversable.name,
     )
     for json_path in json_paths:
         profile = _load_profile_file(json_path)
         profiles[profile["name"]] = profile
     if not profiles:
-        raise RuntimeError(f"No simulation profiles were discovered in {PROFILE_DIR}")
+        raise RuntimeError(f"No simulation profiles were discovered in {profile_dir}")
     return profiles
 
 

@@ -30,7 +30,16 @@ class OutcomeIn(BaseModel):
     reps: int | None = Field(default=None, ge=1, description="Number of repetitions attempted.")
     metrics: OutcomeMetrics | None = Field(default=None, description="Telemetry metrics captured for the cue.")
     extended: bool = Field(default=False, description="Whether the extended simulation mode was active.")
+    profile: str | None = Field(default=None, description="Optional pathology/profile label for the session.")
+
 
 class RankedCue(BaseModel):
     cue_text: str
     score: float
+
+
+class PolicyBestResponse(BaseModel):
+    user_id: str
+    exercise_id: str
+    profile: str | None = Field(default=None)
+    recommendations: list[RankedCue]
