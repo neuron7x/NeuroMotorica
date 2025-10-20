@@ -48,4 +48,5 @@
 
 ## Моніторинг
 - Метрики Prometheus за адресою `/metrics` (експортуються через `prometheus_fastapi_instrumentator`).
+- Інструментація активується автоматично під час імпорту `neuromotorica.cloud.api.main`. Для відключення у середовищах із обмеженнями встановіть `NEUROMOTORICA_DISABLE_METRICS=1` або `NEUROMOTORICA_ENABLE_METRICS=0` перед запуском сервісу; явне ввімкнення можливе через `NEUROMOTORICA_ENABLE_METRICS=1`.
 - Логи у форматі JSON сумісні з ELK/Datadog.
