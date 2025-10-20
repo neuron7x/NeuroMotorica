@@ -31,3 +31,6 @@ def test_api_roundtrip():
     r2 = client.get("/policy/best/u1/squat?k=3")
     assert r2.status_code == 200
     assert isinstance(r2.json(), list)
+    metrics = client.get("/metrics")
+    assert metrics.status_code == 200
+    assert metrics.headers.get("content-type", "").startswith("text/plain")
