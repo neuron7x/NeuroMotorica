@@ -1,0 +1,91 @@
+[
+  {
+    "t": 1.8,
+    "rep_idx": 1,
+    "knee_valgus_deg": 4.31,
+    "concentric_velocity": 0.324,
+    "arousal": 0.49,
+    "faults": []
+  },
+  {
+    "t": 3.6,
+    "rep_idx": 2,
+    "knee_valgus_deg": 7.03,
+    "concentric_velocity": 0.351,
+    "arousal": 0.78,
+    "faults": []
+  },
+  {
+    "t": 5.4,
+    "rep_idx": 3,
+    "knee_valgus_deg": 6.33,
+    "concentric_velocity": 0.342,
+    "arousal": 0.44,
+    "faults": []
+  },
+  {
+    "t": 7.2,
+    "rep_idx": 4,
+    "knee_valgus_deg": 10.29,
+    "concentric_velocity": 0.373,
+    "arousal": 0.79,
+    "faults": []
+  },
+  {
+    "t": 9.0,
+    "rep_idx": 5,
+    "knee_valgus_deg": 7.52,
+    "concentric_velocity": 0.359,
+    "arousal": 0.22,
+    "faults": []
+  },
+  {
+    "t": 10.8,
+    "rep_idx": 6,
+    "knee_valgus_deg": 9.53,
+    "concentric_velocity": 0.114,
+    "arousal": 0.32,
+    "faults": [
+      "slow_concentric"
+    ]
+  },
+  {
+    "t": 12.6,
+    "rep_idx": 7,
+    "knee_valgus_deg": 14.17,
+    "concentric_velocity": 0.193,
+    "arousal": 0.79,
+    "faults": [
+      "knee_valgus"
+    ]
+  },
+  {
+    "t": 14.4,
+    "rep_idx": 8,
+    "knee_valgus_deg": 15.66,
+    "concentric_velocity": 0.094,
+    "arousal": 0.75,
+    "faults": [
+      "knee_valgus",
+      "slow_concentric"
+    ]
+  },
+  {
+    "t": 16.2,
+    "rep_idx": 9,
+    "knee_valgus_deg": 10.31,
+    "concentric_velocity": 0.207,
+    "arousal": 0.56,
+    "faults": []
+  },
+  {
+    "t": 18.0,
+    "rep_idx": 10,
+    "knee_valgus_deg": 11.69,
+    "concentric_velocity": 0.11,
+    "arousal": 0.35,
+    "faults": [
+      "slow_concentric"
+    ]
+  }
+]

@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+title: NeuroMotorica (2025)
+message: If you use this software, please cite it.
+authors:
+  - family-names: NeuroMotorica
+    given-names: Team
+license: MIT
+version: 0.5.0

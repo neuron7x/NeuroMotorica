@@ -1,0 +1,16 @@
+{
+  "twitch": {
+    "time_to_peak_ms": [
+      20,
+      40
+    ],
+    "half_relaxation_time_ms": [
+      40,
+      80
+    ]
+  },
+  "fusion_frequency_Hz": [
+    10,
+    50
+  ]
+}

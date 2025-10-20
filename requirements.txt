@@ -1,0 +1,4 @@
+# Optional for security tools; project uses pyproject.toml for deps
+pip>=24.3.1
+wheel
+setuptools>=68

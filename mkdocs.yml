@@ -1,0 +1,23 @@
+site_name: NeuroMotorica
+theme:
+  name: material
+nav:
+  - Home: index.md
+  - Model: model.md
+  - Algorithms: algorithms.md
+  - Validation: validation.md
+  - Optimization: optimization.md
+  - Extended: extended.md
+  - API: api.md
+  - R&D: 
+      - Protocol: 01_PROTOCOL.md
+      - Ethics & GDPR: 03_ETHICS_GDPR.md
+      - Risk Mitigation: 06_RISK_MITIGATION.md
+      - Data Management: 04_DATA_MANAGEMENT.md
+      - Trial Registration: 05_TRIAL_REGISTRATION.md
+markdown_extensions:
+  - admonition
+  - footnotes
+  - codehilite
+  - toc:
+      permalink: true
