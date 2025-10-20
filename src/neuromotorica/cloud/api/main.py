@@ -60,8 +60,6 @@ def _setup_metrics(app: FastAPI) -> None:
 app = FastAPI(title="NeuroMotorica Policy API", version="0.5.0")
 svc = PolicyService(get_db())
 
-_setup_metrics(app)
-
 @app.post("/policy/outcome")
 def policy_outcome(inp: OutcomeIn) -> dict:
     svc.update_outcome(inp.user_id, inp.exercise_id, inp.cue_text, inp.success)
@@ -71,3 +69,5 @@ def policy_outcome(inp: OutcomeIn) -> dict:
 def policy_best(user_id: str, exercise_id: str, k: int = Query(3, ge=1, le=10)):
     ranked = svc.topk(user_id, exercise_id, k=k)
     return [RankedCue(cue_text=c, score=s) for c, s in ranked]
+
+_setup_metrics(app)
