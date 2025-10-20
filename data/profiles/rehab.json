@@ -1,0 +1,28 @@
+{
+  "name": "rehab",
+  "description": "Slower recovery profile representative of early-stage rehabilitation cohorts.",
+  "nmj": {
+    "quantal_content": 0.9,
+    "tau_rise": 0.007,
+    "tau_decay": 0.055,
+    "ach_decay": 0.035
+  },
+  "enhanced_nmj": {
+    "quantal_content": 1.05,
+    "tau_rise": 0.006,
+    "tau_decay": 0.050,
+    "ach_decay": 0.030,
+    "co_transmission": true,
+    "ach_ratio": 0.65,
+    "histamine_ratio": 0.35,
+    "histamine_tau_rise": 0.012,
+    "histamine_tau_decay": 0.085,
+    "modulation_gain": 1.1
+  },
+  "muscle": {
+    "F_max": 980.0,
+    "mu_size_ratio": 30.0,
+    "tau_act": 0.014,
+    "tau_deact": 0.055
+  }
+}

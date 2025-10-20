@@ -1,0 +1,28 @@
+{
+  "name": "baseline",
+  "description": "Legacy parameterization tuned for general adult neuromuscular performance.",
+  "nmj": {
+    "quantal_content": 1.0,
+    "tau_rise": 0.006,
+    "tau_decay": 0.050,
+    "ach_decay": 0.030
+  },
+  "enhanced_nmj": {
+    "quantal_content": 1.2,
+    "tau_rise": 0.005,
+    "tau_decay": 0.045,
+    "ach_decay": 0.025,
+    "co_transmission": true,
+    "ach_ratio": 0.7,
+    "histamine_ratio": 0.3,
+    "histamine_tau_rise": 0.010,
+    "histamine_tau_decay": 0.080,
+    "modulation_gain": 1.2
+  },
+  "muscle": {
+    "F_max": 1200.0,
+    "mu_size_ratio": 35.0,
+    "tau_act": 0.012,
+    "tau_deact": 0.045
+  }
+}
