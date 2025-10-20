@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-import pathlib
+from importlib import resources
+from importlib.resources.abc import Traversable
 from dataclasses import asdict
 from functools import lru_cache
 from typing import Dict, Tuple
@@ -10,15 +11,16 @@ from .models.nmj import NMJParams
 from .models.enhanced_nmj import EnhancedNMJParams
 from .models.muscle import MuscleParams
 
-PROFILE_DIR = pathlib.Path(__file__).resolve().parents[2] / "data" / "profiles"
+PROFILE_DIR = resources.files("neuromotorica") / "data" / "profiles"
 
 class ProfileNotFoundError(ValueError):
     """Raised when a requested simulation profile is unavailable."""
 
 
-def _load_profile_file(path: pathlib.Path) -> Dict:
+def _load_profile_file(path: Traversable) -> Dict:
     data = json.loads(path.read_text(encoding="utf-8"))
-    name = data.get("name") or path.stem
+    stem = path.name.rsplit(".", 1)[0]
+    name = data.get("name") or stem
     data["name"] = name
     data.setdefault("description", "")
     data["_path"] = str(path)
@@ -27,10 +29,14 @@ def _load_profile_file(path: pathlib.Path) -> Dict:
 
 @lru_cache(maxsize=None)
 def _profiles_index() -> Dict[str, Dict]:
-    if not PROFILE_DIR.exists():
+    if not PROFILE_DIR.is_dir():
         raise FileNotFoundError(f"Profile directory not found: {PROFILE_DIR}")
     profiles: Dict[str, Dict] = {}
-    for json_path in sorted(PROFILE_DIR.glob("*.json")):
+    json_paths = sorted(
+        (child for child in PROFILE_DIR.iterdir() if child.name.endswith(".json")),
+        key=lambda traversable: traversable.name,
+    )
+    for json_path in json_paths:
         profile = _load_profile_file(json_path)
         profiles[profile["name"]] = profile
     if not profiles:
