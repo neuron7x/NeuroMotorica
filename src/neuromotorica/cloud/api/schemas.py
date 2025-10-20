@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel, field_validator
@@ -28,9 +30,47 @@ class OutcomeIn(BaseModel):
     cue_text: str = Field(..., min_length=1)
     success: bool
     reps: int | None = Field(default=None, ge=1, description="Number of repetitions attempted.")
-    metrics: OutcomeMetrics | None = Field(default=None, description="Telemetry metrics captured for the cue.")
+    metrics: OutcomeMetrics | None = Field(
+        default=None, description="Telemetry metrics captured for the cue."
+    )
     extended: bool = Field(default=False, description="Whether the extended simulation mode was active.")
+
 
 class RankedCue(BaseModel):
     cue_text: str
     score: float
+
+
+class SensorCapabilities(BaseModel):
+    heart_rate: bool = False
+    imu: bool = False
+    emg: bool = False
+
+
+class SessionStartRequest(BaseModel):
+    user_id: str = Field(..., min_length=1)
+    exercise_id: str = Field(..., min_length=1)
+    sensor_caps: SensorCapabilities
+    metadata: dict[str, str] = Field(default_factory=dict)
+
+
+class SessionStartResponse(BaseModel):
+    session_id: str
+    started_at: datetime
+
+
+class SignalIn(BaseModel):
+    ts: datetime
+    emg: list[float] | None = None
+    imu: list[float] | None = None
+    hr: int | None = Field(default=None, ge=0, le=255)
+
+
+class SessionSummaryIn(BaseModel):
+    metrics: dict[str, float]
+
+
+class SessionSummaryOut(BaseModel):
+    session_id: str
+    status: str
+    metrics: dict[str, float]

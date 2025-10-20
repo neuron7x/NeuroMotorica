@@ -1,0 +1,9 @@
+{
+  "name": "NeuroMotorica Coach",
+  "short_name": "NM Coach",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#101010",
+  "theme_color": "#4f46e5",
+  "icons": []
+}
