@@ -1,0 +1,3 @@
+# Development and CI dependencies.
+# Installing the editable project with the "dev" extra pulls in pytest, coverage tooling, linters, and docs deps.
+-e .[dev]
