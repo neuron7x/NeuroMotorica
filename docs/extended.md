@@ -5,7 +5,7 @@
 ## Stochastic Reliability
 - Параметри: `noise_sigma`, `failure_bias`.
 - Додає стохастичні зриви передачі та коливання латентності.
-- Метрики: `failure_rate`, `jitter_ms`, `cv_force`.
+- Метрики: `failure_rate`, `jitter_ms`, `latency_cv`, `cv_force`.
 
 ## Mechano-sensitivity
 - Параметр `topography_factor` моделює неоднорідність м'язових волокон.
@@ -24,7 +24,8 @@ neuromotorica simulate-extended \
   --rate 20 \
   --noise-sigma 0.05 \
   --glial-gain 0.25 \
-  --topography 1.2
+  --topography 1.2 \
+  --failure-bias 0.15
 ```
 
 ## Інтеграція з API

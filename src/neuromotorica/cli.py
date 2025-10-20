@@ -67,9 +67,18 @@ if __name__ == "__main__":
 
 
 @app.command(name="simulate-extended")
-def simulate_extended_cmd(seconds: float = 1.0, units: int = 64, rate: float = 10.0,
-                          noise_sigma: float = 0.05, glial_gain: float = 0.25, topography: float = 1.2):
+def simulate_extended_cmd(
+    seconds: float = typer.Option(1.0, "--seconds", min=0.2, help="Simulation length (s)"),
+    units: int = typer.Option(64, "--units", min=1, help="Motor units to simulate"),
+    rate: float = typer.Option(10.0, "--rate", min=0.1, help="Mean Poisson firing rate (Hz)"),
+    noise_sigma: float = typer.Option(0.05, "--noise-sigma", min=0.0, help="Channel noise diffusion sigma"),
+    glial_gain: float = typer.Option(0.25, "--glial-gain", help="Tripartite modulation gain"),
+    topography: float = typer.Option(1.2, "--topography", min=0.1, help="Muscle topography scaling factor"),
+    failure_bias: float = typer.Option(0.0, "--failure-bias", min=0.0, max=1.0,
+                                      help="Probability of vesicle release failure per spike"),
+):
     from .analysis.extended_validation import simulate_extended
     out = simulate_extended(seconds=seconds, dt=0.001, units=units, rate_hz=rate,
-                            noise_sigma=noise_sigma, glial_gain=glial_gain, topo_factor=topography)
+                            noise_sigma=noise_sigma, glial_gain=glial_gain,
+                            topo_factor=topography, failure_bias=failure_bias)
     print(json.dumps(out, ensure_ascii=False))
