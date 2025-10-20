@@ -22,6 +22,29 @@ def test_cli_plot_creates_files():
         for _, path in out["saved"].items():
             assert os.path.exists(path)
 
+
+def test_cli_profile_benchmarks_emit_json():
+    result = runner.invoke(
+        app,
+        [
+            "profile",
+            "--seconds",
+            "0.2",
+            "--units",
+            "8",
+            "--rate",
+            "8",
+            "--dt",
+            "0.002",
+        ],
+    )
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["summary"]["scenario_count"] >= 1
+    first = payload["benchmarks"][0]
+    assert first["kernel_throughput"]["time_steps"] > 0
+    assert "suggested_tweaks" in first and first["suggested_tweaks"]
+
 def test_api_roundtrip():
     client = TestClient(fastapi_app)
     r = client.post("/policy/outcome", json={
