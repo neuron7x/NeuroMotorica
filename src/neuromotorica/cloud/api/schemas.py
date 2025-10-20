@@ -74,3 +74,18 @@ class SessionSummaryOut(BaseModel):
     session_id: str
     status: str
     metrics: dict[str, float]
+
+
+class ReplicaSyncRecord(BaseModel):
+    id: str = Field(..., min_length=1)
+    version: int = Field(..., ge=0)
+    payload: Any
+
+
+class ReplicaSyncIn(BaseModel):
+    batch: list[ReplicaSyncRecord] = Field(default_factory=list)
+
+
+class ReplicaSyncOut(BaseModel):
+    status: str
+    synced: int

@@ -8,6 +8,8 @@ from .db import get_db
 from .schemas import (
     OutcomeIn,
     RankedCue,
+    ReplicaSyncIn,
+    ReplicaSyncOut,
     SessionStartRequest,
     SessionStartResponse,
     SessionSummaryIn,
@@ -112,4 +114,11 @@ def finalize_session(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
     svc.finalize_session(session_id, payload.metrics)
     return SessionSummaryOut(session_id=session_id, status="completed", metrics=payload.metrics)
+
+
+@app.post("/v1/session", response_model=ReplicaSyncOut, status_code=status.HTTP_202_ACCEPTED)
+def sync_replica(payload: ReplicaSyncIn) -> ReplicaSyncOut:
+    synced = len(payload.batch)
+    status_label = "noop" if synced == 0 else "accepted"
+    return ReplicaSyncOut(status=status_label, synced=synced)
 

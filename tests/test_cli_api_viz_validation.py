@@ -44,3 +44,28 @@ def test_api_roundtrip():
     r2 = client.get("/policy/best/u1/squat?k=3")
     assert r2.status_code == 200
     assert isinstance(r2.json(), list)
+
+
+def test_session_sync_endpoint_acknowledges_batch():
+    client = TestClient(fastapi_app)
+    payload = {
+        "batch": [
+            {
+                "id": "local-1",
+                "version": 1,
+                "payload": {"ts": "2024-01-01T00:00:00Z", "emg": [0.1, 0.2]},
+            }
+        ]
+    }
+    response = client.post("/v1/session", json=payload)
+    assert response.status_code == 202
+    body = response.json()
+    assert body["status"] == "accepted"
+    assert body["synced"] == 1
+
+
+def test_session_sync_endpoint_handles_empty_batch():
+    client = TestClient(fastapi_app)
+    response = client.post("/v1/session", json={"batch": []})
+    assert response.status_code == 202
+    assert response.json() == {"status": "noop", "synced": 0}
