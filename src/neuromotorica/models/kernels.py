@@ -19,9 +19,9 @@ def alpha_kernel(t: NDArray[np.float64], tau_rise: float, tau_decay: float) -> N
     return k.astype(np.float64, copy=False)
 
 def _t_peak(tr: float, td: float) -> float:
-    if abs(td - tr) < 1e-9:
-        return tr  # approx peak near tr when tr≈td
-    return (tr * td) * np.log(td / tr) / (td - tr)
+    ratio = tr / (tr + td)
+    ratio = np.clip(ratio, 1e-12, 1 - 1e-12)
+    return -tr * float(np.log(ratio))
 
 def normalized_alpha_kernel(t: NDArray[np.float64], tau_rise: float, tau_decay: float) -> NDArray[np.float64]:
     k = alpha_kernel(t, tau_rise, tau_decay)
@@ -33,18 +33,56 @@ def normalized_alpha_kernel(t: NDArray[np.float64], tau_rise: float, tau_decay: 
         peak = float(np.max(k)) if np.max(k) > 0 else 1.0
     return (k / peak).astype(np.float64, copy=False)
 
-def convolve_signal(sig: NDArray[np.float64], kernel: NDArray[np.float64], use_fft_threshold: int = 2048) -> NDArray[np.float64]:
+def convolve_signal(
+    sig: NDArray[np.float64],
+    kernel: NDArray[np.float64],
+    use_fft_threshold: int = 2048,
+) -> NDArray[np.float64]:
     """Adaptive conv: np.convolve for short; FFT conv for long sequences.
-    Returns 'full' trimmed to len(sig).
-    """
+    Returns 'full' trimmed to len(sig)."""
+
     n = len(sig) + len(kernel) - 1
     if n < use_fft_threshold:
-        return np.convolve(sig, kernel, mode='full')[: len(sig)]
+        return np.convolve(sig, kernel, mode="full")[: len(sig)]
+
     # FFT-based linear convolution
-    # Next power of two for speed
-    L = 1 << (int(np.ceil(np.log2(n))))
-    Sf = np.fft.rfft(sig, n=L)
-    Kf = np.fft.rfft(kernel, n=L)
-    Yf = Sf * Kf
-    y = np.fft.irfft(Yf, n=L)[: len(sig) + len(kernel) - 1]
+    L = 1 << int(np.ceil(np.log2(n)))
+    spectrum_sig = np.fft.rfft(sig, n=L)
+    spectrum_kernel = np.fft.rfft(kernel, n=L)
+    y = np.fft.irfft(spectrum_sig * spectrum_kernel, n=L)
     return y[: len(sig)]
+
+
+def convolve_traces(
+    traces: NDArray[np.float64],
+    kernel: NDArray[np.float64],
+    use_fft_threshold: int = 2048,
+) -> NDArray[np.float64]:
+    """Vectorised convolution of multiple traces with a shared kernel."""
+
+    traces_arr = np.asarray(traces, dtype=np.float64)
+    kernel_arr = np.asarray(kernel, dtype=np.float64)
+    if kernel_arr.ndim != 1:
+        raise ValueError("kernel must be 1-D")
+    if traces_arr.ndim == 0:
+        raise ValueError("traces must have at least one dimension")
+    if traces_arr.ndim == 1:
+        return convolve_signal(traces_arr, kernel_arr, use_fft_threshold)
+
+    time_len = traces_arr.shape[-1]
+    if time_len == 0:
+        return np.empty_like(traces_arr)
+
+    n = time_len + kernel_arr.size - 1
+    if n < use_fft_threshold:
+        return np.apply_along_axis(
+            lambda sig: np.convolve(sig, kernel_arr, mode="full")[:time_len],
+            axis=-1,
+            arr=traces_arr,
+        )
+
+    L = 1 << int(np.ceil(np.log2(n)))
+    traces_fft = np.fft.rfft(traces_arr, n=L, axis=-1)
+    kernel_fft = np.fft.rfft(kernel_arr, n=L)
+    y = np.fft.irfft(traces_fft * kernel_fft, n=L, axis=-1)
+    return y[..., :time_len]

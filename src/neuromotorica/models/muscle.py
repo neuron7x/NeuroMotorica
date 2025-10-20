@@ -24,7 +24,8 @@ class Muscle:
         self.dt = dt
         self.T = T
         self.units = units
-        self.mu_scales = np.linspace(1.0, p.mu_size_ratio, units).astype(np.float64)
+        mu_scales = np.linspace(1.0, p.mu_size_ratio, units, dtype=np.float64)
+        self.mu_weights = mu_scales / np.sum(mu_scales)
 
     def force(self, act: NDArray[np.float64], L: float = 1.0, V: float = 0.0) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         if act.shape[0] != self.units:
@@ -36,7 +37,7 @@ class Muscle:
         fv = (self.p.Vmax - V) / denom if denom != 0 else 1.0
         fv = max(fv, 0.1)
         for i in range(self.units):
-            F_mu[i, :] = act[i, :] * (self.p.F_max / self.units) * self.mu_scales[i] * fl * fv
+            F_mu[i, :] = act[i, :] * self.p.F_max * self.mu_weights[i] * fl * fv
         F_passive = self.p.F_max * self.p.passive_k * (np.exp(self.p.passive_exp * max(L - self.p.L0, 0.0)) - 1.0)
         F_total = np.sum(F_mu, axis=0) + F_passive
         return F_total, F_mu
