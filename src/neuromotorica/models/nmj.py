@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np
 from numpy.typing import NDArray
-from .kernels import normalized_alpha_kernel, convolve_signal
+from .kernels import normalized_alpha_kernel, convolve_traces
 from .filters import lowpass
 
 @dataclass
@@ -25,11 +25,6 @@ class NMJ:
     def calcium_activation(self, spikes: NDArray[np.float64]) -> NDArray[np.float64]:
         if spikes.ndim != 2:
             raise ValueError("spikes must be [units, Tn]")
-        N, Tn = spikes.shape
-        act = np.zeros_like(spikes, dtype=np.float64)
-        for i in range(N):
-            s = spikes[i, :]
-            conv = convolve_signal(s, self.kernel)
-            lp = lowpass(conv * self.p.quantal_content, self.dt, self.p.ach_decay)
-            act[i, :] = np.clip(lp, 0.0, 1.0)
-        return act
+        conv = convolve_traces(spikes, self.kernel)
+        lp = lowpass(conv * self.p.quantal_content, self.dt, self.p.ach_decay)
+        return np.clip(lp, 0.0, 1.0, out=lp)

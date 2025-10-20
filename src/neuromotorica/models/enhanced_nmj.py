@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import NDArray
 from .nmj import NMJ, NMJParams
-from .kernels import normalized_alpha_kernel, convolve_signal
+from .kernels import normalized_alpha_kernel, convolve_traces
 from .filters import lowpass, lowpass_biquad_filtfilt
 
 @dataclass
@@ -25,30 +25,36 @@ class EnhancedNMJ(NMJ):
     def dual_transmission_activation(self, spikes: NDArray[np.float64]) -> NDArray[np.float64]:
         if spikes.ndim != 2:
             raise ValueError("spikes must be [units, Tn]")
-        N, Tn = spikes.shape
-        dual_act = np.zeros_like(spikes, dtype=np.float64)
-        for i in range(N):
-            s = spikes[i, :]
-            ach_conv = convolve_signal(s, self.kernel)
-            ach_act = lowpass(ach_conv * self.p.quantal_content * self.enhanced_p.ach_ratio, self.dt, self.p.ach_decay)
-            hist_conv = convolve_signal(s, self.histamine_kernel)
-            hist_act = lowpass(hist_conv * self.p.quantal_content * self.enhanced_p.histamine_ratio, self.dt, self.p.ach_decay * 1.5)
-            combined = (ach_act + hist_act) * self.enhanced_p.modulation_gain
-            dual_act[i, :] = np.clip(combined, 0.0, 1.5)
-        return dual_act
+        ach_conv = convolve_traces(spikes, self.kernel)
+        hist_conv = convolve_traces(spikes, self.histamine_kernel)
+        ach_act = lowpass(
+            ach_conv * self.p.quantal_content * self.enhanced_p.ach_ratio,
+            self.dt,
+            self.p.ach_decay,
+        )
+        hist_act = lowpass(
+            hist_conv * self.p.quantal_content * self.enhanced_p.histamine_ratio,
+            self.dt,
+            self.p.ach_decay * 1.5,
+        )
+        combined = (ach_act + hist_act) * self.enhanced_p.modulation_gain
+        return np.clip(combined, 0.0, 1.5, out=combined)
 
 class OptimizedEnhancedNMJ(EnhancedNMJ):
     def physiologically_realistic_activation(self, spikes: NDArray[np.float64]) -> NDArray[np.float64]:
         if spikes.ndim != 2:
             raise ValueError("spikes must be [units, Tn]")
-        N, Tn = spikes.shape
-        dual_act = np.zeros_like(spikes, dtype=np.float64)
-        for i in range(N):
-            s = spikes[i, :]
-            ach_conv = convolve_signal(s, self.kernel)
-            ach_act = lowpass_biquad_filtfilt(ach_conv * self.p.quantal_content * self.enhanced_p.ach_ratio, self.dt, self.p.ach_decay)
-            hist_conv = convolve_signal(s, self.histamine_kernel)
-            hist_act = lowpass_biquad_filtfilt(hist_conv * self.p.quantal_content * self.enhanced_p.histamine_ratio, self.dt, self.p.ach_decay * 1.5)
-            combined = ach_act + hist_act + 0.3 * ach_act * hist_act
-            dual_act[i, :] = np.clip(combined, 0.0, 1.2)
-        return dual_act
+        ach_conv = convolve_traces(spikes, self.kernel)
+        hist_conv = convolve_traces(spikes, self.histamine_kernel)
+        ach_act = lowpass_biquad_filtfilt(
+            ach_conv * self.p.quantal_content * self.enhanced_p.ach_ratio,
+            self.dt,
+            self.p.ach_decay,
+        )
+        hist_act = lowpass_biquad_filtfilt(
+            hist_conv * self.p.quantal_content * self.enhanced_p.histamine_ratio,
+            self.dt,
+            self.p.ach_decay * 1.5,
+        )
+        combined = ach_act + hist_act + 0.3 * ach_act * hist_act
+        return np.clip(combined, 0.0, 1.2, out=combined)

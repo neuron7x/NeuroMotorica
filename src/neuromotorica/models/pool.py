@@ -23,10 +23,13 @@ class Pool:
         p = rate_hz * self.dt
         return (rng.random((self.units, self.Tn)) < p).astype(np.float64)
 
-    def single_spike(self, at_idx: int) -> NDArray[np.float64]:
-        s = np.zeros((1, self.Tn), dtype=np.float64)
-        if 0 <= at_idx < self.Tn:
-            s[0, at_idx] = 1.0
+    def single_spike(self, at_idx: int, unit_idx: int = 0) -> NDArray[np.float64]:
+        """Return a spike train with a single unit firing once."""
+
+        s = np.zeros((self.units, self.Tn), dtype=np.float64)
+        if 0 <= at_idx < self.Tn and self.units:
+            idx = int(np.clip(unit_idx, 0, self.units - 1))
+            s[idx, at_idx] = 1.0
         return s
 
     def burst(self, start_idx: int, end_idx: int, units: int | None = None) -> NDArray[np.float64]:

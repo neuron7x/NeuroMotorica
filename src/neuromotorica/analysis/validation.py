@@ -11,8 +11,19 @@ def twitch_metrics(force: NDArray[np.float64], dt: float, window_s: float = 0.3)
     Tn = len(force)
     win = min(Tn, int(window_s / dt))
     seg = force[:win]
+    baseline = float(seg[0])
+    peak = float(np.max(seg))
+    diffs = np.diff(seg)
+    slope_idx = int(np.argmax(diffs)) if diffs.size else 0
+    rise_threshold = baseline + 0.1 * (peak - baseline)
+    threshold_idx = 0
+    if rise_threshold > baseline:
+        candidates = np.flatnonzero(seg >= rise_threshold)
+        if candidates.size:
+            threshold_idx = int(candidates[0])
+    onset_idx = max(slope_idx, threshold_idx)
     ttp_idx = int(np.argmax(seg))
-    ttp = ttp_idx * dt * 1000.0
+    ttp = max(ttp_idx - onset_idx, 0) * dt * 1000.0
     peak = float(np.max(seg))
     half = peak / 2.0
     post = seg[ttp_idx:]
