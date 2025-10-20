@@ -10,14 +10,22 @@ from ..models.enhanced_nmj import EnhancedNMJ, OptimizedEnhancedNMJ
 from ..models.muscle import Muscle
 from ..profiles import build_profile_params
 
-def plot_scenarios(outdir: str = "outputs", seconds: float = 1.0, dt: float = 0.001, units: int = 64,
-                   rate_hz: float = 10.0, seed: int = 42, profile: str = "baseline") -> dict:
+def plot_scenarios(
+    outdir: str = "outputs",
+    seconds: float = 1.0,
+    dt: float = 0.001,
+    units: int = 64,
+    rate_hz: float = 10.0,
+    seed: int = 42,
+    profile: str = "baseline",
+    fft_threshold: int | None = None,
+) -> dict:
     od = pathlib.Path(outdir); od.mkdir(parents=True, exist_ok=True)
     pool = Pool(units=units, dt=dt, T=seconds)
     nmjp, enhp, mp, _ = build_profile_params(profile)
-    nmj = NMJ(nmjp, dt, seconds)
-    enm = EnhancedNMJ(enhp, dt, seconds)
-    onmj = OptimizedEnhancedNMJ(enhp, dt, seconds)
+    nmj = NMJ(nmjp, dt, seconds, fft_threshold=fft_threshold)
+    enm = EnhancedNMJ(enhp, dt, seconds, fft_threshold=fft_threshold)
+    onmj = OptimizedEnhancedNMJ(enhp, dt, seconds, fft_threshold=fft_threshold)
     muscle = Muscle(mp, dt, seconds, units=units)
 
     idx = int(0.05 / dt)

@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+from functools import lru_cache
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -32,6 +35,29 @@ def normalized_alpha_kernel(t: NDArray[np.float64], tau_rise: float, tau_decay: 
     if not np.isfinite(peak) or peak <= 0:
         peak = float(np.max(k)) if np.max(k) > 0 else 1.0
     return (k / peak).astype(np.float64, copy=False)
+
+
+def _round_float(value: float) -> float:
+    """Round floating values for use as cache keys."""
+
+    return float(round(value, 12))
+
+
+@lru_cache(maxsize=256)
+def _cached_kernel(duration: float, dt: float, tau_rise: float, tau_decay: float) -> NDArray[np.float64]:
+    t = np.arange(0.0, duration, dt, dtype=np.float64)
+    return normalized_alpha_kernel(t, tau_rise, tau_decay)
+
+
+def cached_normalized_kernel(duration: float, dt: float, tau_rise: float, tau_decay: float) -> NDArray[np.float64]:
+    """Return a cached normalized kernel for the given parameters."""
+
+    return _cached_kernel(
+        _round_float(duration),
+        _round_float(dt),
+        _round_float(tau_rise),
+        _round_float(tau_decay),
+    ).copy()
 
 def convolve_signal(
     sig: NDArray[np.float64],

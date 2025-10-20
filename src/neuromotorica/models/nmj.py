@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np
 from numpy.typing import NDArray
-from .kernels import normalized_alpha_kernel, convolve_traces
+from .kernels import cached_normalized_kernel, convolve_traces
 from .filters import lowpass
 
 @dataclass
@@ -13,18 +13,18 @@ class NMJParams:
     ach_decay: float = 0.030
 
 class NMJ:
-    def __init__(self, p: NMJParams, dt: float, T: float):
+    def __init__(self, p: NMJParams, dt: float, T: float, *, fft_threshold: int | None = None):
         if dt <= 0 or T <= 0:
             raise ValueError("dt and T must be > 0")
         self.p = p
         self.dt = dt
         self.T = T
-        kernel_t = np.arange(0.0, 0.5, dt, dtype=np.float64)
-        self.kernel = normalized_alpha_kernel(kernel_t, p.tau_rise, p.tau_decay)
+        self.fft_threshold = 2048 if fft_threshold is None else max(int(fft_threshold), 1)
+        self.kernel = cached_normalized_kernel(0.5, dt, p.tau_rise, p.tau_decay)
 
     def calcium_activation(self, spikes: NDArray[np.float64]) -> NDArray[np.float64]:
         if spikes.ndim != 2:
             raise ValueError("spikes must be [units, Tn]")
-        conv = convolve_traces(spikes, self.kernel)
+        conv = convolve_traces(spikes, self.kernel, use_fft_threshold=self.fft_threshold)
         lp = lowpass(conv * self.p.quantal_content, self.dt, self.p.ach_decay)
         return np.clip(lp, 0.0, 1.0, out=lp)
