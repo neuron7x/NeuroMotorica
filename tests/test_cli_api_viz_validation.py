@@ -24,10 +24,23 @@ def test_cli_plot_creates_files():
 
 def test_api_roundtrip():
     client = TestClient(fastapi_app)
-    r = client.post("/policy/outcome", json={
-        "user_id": "u1", "exercise_id": "squat", "cue_text": "Тримай темп", "success": True
-    })
+    payload = {
+        "user_id": "u1",
+        "exercise_id": "squat",
+        "cue_text": "Тримай темп",
+        "success": True,
+        "reps": 12,
+        "metrics": {"twitch": 0.42, "snr": 18.0},
+        "extended": True,
+    }
+    r = client.post("/policy/outcome", json=payload)
     assert r.status_code == 200
+    out = r.json()
+    assert out["status"] == "ok"
+    assert out["outcome"]["reps"] == payload["reps"]
+    assert out["outcome"]["metrics"] == payload["metrics"]
+    assert out["outcome"]["extended"] is True
+    assert out["outcome"]["success"] == 1
     r2 = client.get("/policy/best/u1/squat?k=3")
     assert r2.status_code == 200
     assert isinstance(r2.json(), list)
