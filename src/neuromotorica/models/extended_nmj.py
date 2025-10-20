@@ -22,15 +22,29 @@ class ExtendedNMJParams(EnhancedNMJParams):
     glial_mod_gain: float = 0.25      # tripartite modulation
 
 class ExtendedOptimizedNMJ(OptimizedEnhancedNMJ):
-    def __init__(self, p: ExtendedNMJParams, dt: float, T: float):
-        super().__init__(p, dt, T)
+    def __init__(
+        self,
+        p: ExtendedNMJParams,
+        dt: float,
+        T: float,
+        fft_threshold: int | None = None,
+    ):
+        super().__init__(p, dt, T, fft_threshold=fft_threshold)
         self.ext_p = p
 
     def extended_activation(self, spikes: NDArray[np.float64]) -> tuple[NDArray[np.float64], float, float]:
         if spikes.ndim != 2:
             raise ValueError("spikes must be [units, Tn]")
-        ach_conv = convolve_traces(spikes, self.kernel)
-        hist_conv = convolve_traces(spikes, self.histamine_kernel)
+        ach_conv = convolve_traces(
+            spikes,
+            self.kernel,
+            use_fft_threshold=self.fft_threshold,
+        )
+        hist_conv = convolve_traces(
+            spikes,
+            self.histamine_kernel,
+            use_fft_threshold=self.fft_threshold,
+        )
         ach_act = lowpass_biquad_filtfilt(
             ach_conv * self.p.quantal_content * self.enhanced_p.ach_ratio,
             self.dt,

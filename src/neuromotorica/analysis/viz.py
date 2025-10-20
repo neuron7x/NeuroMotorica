@@ -9,16 +9,24 @@ from ..models.nmj import NMJ, NMJParams
 from ..models.enhanced_nmj import EnhancedNMJ, EnhancedNMJParams, OptimizedEnhancedNMJ
 from ..models.muscle import Muscle, MuscleParams
 
-def plot_scenarios(outdir: str = "outputs", seconds: float = 1.0, dt: float = 0.001, units: int = 64, rate_hz: float = 10.0, seed: int = 42) -> dict:
+def plot_scenarios(
+    outdir: str = "outputs",
+    seconds: float = 1.0,
+    dt: float = 0.001,
+    units: int = 64,
+    rate_hz: float = 10.0,
+    seed: int = 42,
+    fft_threshold: int = 2048,
+) -> dict:
     od = pathlib.Path(outdir); od.mkdir(parents=True, exist_ok=True)
     pool = Pool(units=units, dt=dt, T=seconds)
     nmjp = NMJParams()
     enhp = EnhancedNMJParams(quantal_content=1.2, tau_rise=0.005, tau_decay=0.045, ach_decay=0.025,
                              co_transmission=True, ach_ratio=0.7, histamine_ratio=0.3, modulation_gain=1.2)
     mp = MuscleParams(F_max=1200.0, mu_size_ratio=35.0, tau_act=0.012, tau_deact=0.045)
-    nmj = NMJ(nmjp, dt, seconds)
-    enm = EnhancedNMJ(enhp, dt, seconds)
-    onmj = OptimizedEnhancedNMJ(enhp, dt, seconds)
+    nmj = NMJ(nmjp, dt, seconds, fft_threshold=fft_threshold)
+    enm = EnhancedNMJ(enhp, dt, seconds, fft_threshold=fft_threshold)
+    onmj = OptimizedEnhancedNMJ(enhp, dt, seconds, fft_threshold=fft_threshold)
     muscle = Muscle(mp, dt, seconds, units=units)
 
     idx = int(0.05 / dt)

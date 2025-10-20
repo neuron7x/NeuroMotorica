@@ -36,15 +36,22 @@ def twitch_metrics(force: NDArray[np.float64], dt: float, window_s: float = 0.3)
     return {"time_to_peak_ms": round(ttp, 2), "half_relaxation_time_ms": round(half_rel, 2),
             "peak_force_N": round(peak, 3), "contraction_velocity_Ns": round(contr_vel, 3)}
 
-def scenario_sim(seconds: float = 1.0, dt: float = 0.001, units: int = 64, rate_hz: float = 10.0, seed: int = 42) -> dict:
+def scenario_sim(
+    seconds: float = 1.0,
+    dt: float = 0.001,
+    units: int = 64,
+    rate_hz: float = 10.0,
+    seed: int = 42,
+    fft_threshold: int = 2048,
+) -> dict:
     pool = Pool(units=units, dt=dt, T=seconds)
     nmjp = NMJParams()
     enhp = EnhancedNMJParams(quantal_content=1.2, tau_rise=0.005, tau_decay=0.045, ach_decay=0.025,
                              co_transmission=True, ach_ratio=0.7, histamine_ratio=0.3, modulation_gain=1.2)
     mp = MuscleParams(F_max=1200.0, mu_size_ratio=35.0, tau_act=0.012, tau_deact=0.045)
-    nmj = NMJ(nmjp, dt, seconds)
-    enm = EnhancedNMJ(enhp, dt, seconds)
-    onmj = OptimizedEnhancedNMJ(enhp, dt, seconds)
+    nmj = NMJ(nmjp, dt, seconds, fft_threshold=fft_threshold)
+    enm = EnhancedNMJ(enhp, dt, seconds, fft_threshold=fft_threshold)
+    onmj = OptimizedEnhancedNMJ(enhp, dt, seconds, fft_threshold=fft_threshold)
     muscle = Muscle(mp, dt, seconds, units=units)
     idx = int(0.05 / dt)
     single = pool.single_spike(idx)

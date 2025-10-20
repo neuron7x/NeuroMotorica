@@ -24,7 +24,8 @@ neuromotorica simulate-extended \
   --rate 20 \
   --noise-sigma 0.05 \
   --glial-gain 0.25 \
-  --topography 1.2
+  --topography 1.2 \
+  --fft-threshold 4096
 ```
 
 ## Інтеграція з API
