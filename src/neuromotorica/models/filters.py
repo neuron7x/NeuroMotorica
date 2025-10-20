@@ -4,7 +4,16 @@ from numpy.typing import NDArray
 
 
 def _normalise_axis(axis: int, ndim: int) -> int:
-    return int(np.core.multiarray.normalize_axis_index(axis, ndim))
+    """Return a normalised axis index without relying on private NumPy APIs."""
+
+    if ndim <= 0:
+        raise ValueError("ndim must be > 0")
+
+    if axis < 0:
+        axis += ndim
+    if axis < 0 or axis >= ndim:
+        raise np.AxisError(axis, ndim=ndim)
+    return int(axis)
 
 
 def lowpass(
