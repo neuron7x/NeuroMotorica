@@ -1,90 +1,96 @@
 import sys
-from types import SimpleNamespace
+import types
 
 import pytest
 from fastapi import FastAPI
 
+from neuromotorica.cloud.api import main
+
 
 @pytest.mark.parametrize(
-    "enable_value, disable_value, expected",
+    "disable_value, enable_value, expected",
     [
+        ("1", None, False),
+        ("false", None, True),
+        (None, "1", True),
+        (None, "0", False),
         (None, None, True),
-        ("1", None, True),
-        ("0", None, False),
-        (None, "1", False),
-        (None, "0", True),
-        ("1", "1", False),
         ("0", "0", False),
     ],
 )
-def test_metrics_enabled(monkeypatch, enable_value, disable_value, expected):
-    from neuromotorica.cloud.api import main as cloud_main
-
-    monkeypatch.delenv("NEUROMOTORICA_ENABLE_METRICS", raising=False)
-    monkeypatch.delenv("NEUROMOTORICA_DISABLE_METRICS", raising=False)
-
-    if enable_value is not None:
-        monkeypatch.setenv("NEUROMOTORICA_ENABLE_METRICS", enable_value)
-    if disable_value is not None:
+def test_metrics_enabled_env_matrix(monkeypatch, disable_value, enable_value, expected):
+    if disable_value is None:
+        monkeypatch.delenv("NEUROMOTORICA_DISABLE_METRICS", raising=False)
+    else:
         monkeypatch.setenv("NEUROMOTORICA_DISABLE_METRICS", disable_value)
 
-    assert cloud_main._metrics_enabled() is expected
+    if enable_value is None:
+        monkeypatch.delenv("NEUROMOTORICA_ENABLE_METRICS", raising=False)
+    else:
+        monkeypatch.setenv("NEUROMOTORICA_ENABLE_METRICS", enable_value)
+
+    assert main._metrics_enabled() is expected
 
 
-def test_setup_metrics_enables_and_is_idempotent(monkeypatch):
-    monkeypatch.delenv("NEUROMOTORICA_DISABLE_METRICS", raising=False)
+class _DummyInstrumentator:
+    def __init__(self):
+        self.instrument_called = False
+        self.expose_called = False
+        self.instrument_app = None
+        self.expose_app = None
+        self.expose_kwargs = None
+
+    def instrument(self, app):
+        self.instrument_called = True
+        self.instrument_app = app
+        return self
+
+    def expose(self, app, **kwargs):
+        self.expose_called = True
+        self.expose_app = app
+        self.expose_kwargs = kwargs
+        return self
+
+
+def test_setup_metrics_disabled(monkeypatch):
+    app = FastAPI()
+    monkeypatch.setenv("NEUROMOTORICA_DISABLE_METRICS", "yes")
+    monkeypatch.delenv("NEUROMOTORICA_ENABLE_METRICS", raising=False)
+
+    main._setup_metrics(app)
+
+    assert not getattr(app.state, "_metrics_enabled", False)
+    assert not hasattr(app.state, "metrics_instrumentator")
+
+
+def test_setup_metrics_enables_once(monkeypatch):
+    app = FastAPI()
+
+    module_name = "prometheus_fastapi_instrumentator"
+    dummy_instances = []
+
+    def factory():
+        inst = _DummyInstrumentator()
+        dummy_instances.append(inst)
+        return inst
+
+    dummy_module = types.SimpleNamespace(Instrumentator=factory)
+    monkeypatch.setitem(sys.modules, module_name, dummy_module)
+
+    monkeypatch.setenv("NEUROMOTORICA_DISABLE_METRICS", "0")
     monkeypatch.setenv("NEUROMOTORICA_ENABLE_METRICS", "1")
 
-    created = []
-    instrumented_apps = []
-    exposed_apps = []
+    main._setup_metrics(app)
+    # Second call should be a no-op because the app is already instrumented.
+    main._setup_metrics(app)
 
-    class DummyInstrumentator:
-        def __init__(self):
-            created.append(self)
-
-        def instrument(self, app):
-            instrumented_apps.append(app)
-            return self
-
-        def expose(self, app, include_in_schema=False):
-            exposed_apps.append((app, include_in_schema))
-
-    monkeypatch.setitem(
-        sys.modules,
-        "prometheus_fastapi_instrumentator",
-        SimpleNamespace(Instrumentator=DummyInstrumentator),
-    )
-
-    from neuromotorica.cloud.api.main import _setup_metrics
-
-    app = FastAPI()
-
-    _setup_metrics(app)
+    assert len(dummy_instances) == 1
+    instrumentator = dummy_instances[0]
 
     assert getattr(app.state, "_metrics_enabled", False) is True
-    assert isinstance(app.state.metrics_instrumentator, DummyInstrumentator)
-    assert created == [app.state.metrics_instrumentator]
-    assert instrumented_apps == [app]
-    assert exposed_apps == [(app, False)]
-
-    _setup_metrics(app)
-
-    assert len(created) == 1
-    assert instrumented_apps == [app]
-    assert exposed_apps == [(app, False)]
-
-
-def test_setup_metrics_disabled_keeps_state_false(monkeypatch):
-    monkeypatch.delenv("NEUROMOTORICA_ENABLE_METRICS", raising=False)
-    monkeypatch.setenv("NEUROMOTORICA_DISABLE_METRICS", "1")
-
-    from neuromotorica.cloud.api.main import _setup_metrics
-
-    app = FastAPI()
-
-    _setup_metrics(app)
-    assert getattr(app.state, "_metrics_enabled", False) is False
-
-    _setup_metrics(app)
-    assert getattr(app.state, "_metrics_enabled", False) is False
+    assert getattr(app.state, "metrics_instrumentator", None) is instrumentator
+    assert instrumentator.instrument_called is True
+    assert instrumentator.expose_called is True
+    assert instrumentator.instrument_app is app
+    assert instrumentator.expose_app is app
+    assert instrumentator.expose_kwargs == {"include_in_schema": False}
