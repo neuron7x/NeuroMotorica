@@ -44,6 +44,7 @@ jobs:
             python -m pip install -r requirements-dev.txt
           else
             python -m pip install -e .[dev]
+          fi
 
       - name: Run tests with pytest
         env:
