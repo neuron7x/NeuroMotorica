@@ -3,9 +3,12 @@ name: CI
 
 on:
   push:
-    branches: [ main, master, '**/test/**', '**/ci/**' ]
   pull_request:
-    branches: [ main, master ]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -46,12 +49,13 @@ jobs:
             python -m pip install -e .[dev]
 
       - name: Run tests with pytest
+        id: pytest
         env:
           PYTHONWARNINGS: default
         run: pytest
 
       - name: Upload coverage XML as artifact
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && steps.pytest.outcome == 'success' && hashFiles('coverage.xml') != ''
         uses: actions/upload-artifact@v4
         with:
           name: coverage-xml-${{ matrix.python-version }}-${{ matrix.os }}
