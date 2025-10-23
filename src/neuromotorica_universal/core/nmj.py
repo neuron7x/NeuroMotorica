@@ -1,7 +1,11 @@
-\
 from __future__ import annotations
-import numpy as np
+
 from dataclasses import dataclass
+from typing import cast
+
+import numpy as np
+import numpy.typing as npt
+from numpy.typing import ArrayLike
 
 @dataclass(frozen=True)
 class SimulationMetrics:
@@ -11,7 +15,7 @@ class SimulationMetrics:
     peak_force: float
 
 class NMJ:
-    """
+    r"""
     Проста, стабільна NMJ-модель для дискретної симуляції.
     Вхід: нейронний імпульс u[t] \in [0,1]
     Вихід: скорочення м'яза y[t] \in [0,1]
@@ -45,22 +49,23 @@ class NMJ:
         self._y_hist.append(self.y)
         return self.y
 
-    def simulate(self, u_seq: np.ndarray) -> np.ndarray:
+    def simulate(self, u_seq: ArrayLike) -> npt.NDArray[np.float64]:
         self.reset()
-        out = np.empty_like(u_seq, dtype=float)
-        for i, u in enumerate(u_seq):
+        seq = np.asarray(u_seq, dtype=float)
+        out = np.empty_like(seq, dtype=float)
+        for i, u in enumerate(seq):
             out[i] = self.step(float(u))
-        return out
+        return cast(npt.NDArray[np.float64], out)
 
     def metrics(self) -> SimulationMetrics:
         if not self._y_hist:
             return SimulationMetrics(reps=0, tempo=0.0, range_of_motion=0.0, peak_force=0.0)
-        y = np.asarray(self._y_hist, dtype=float)
+        y = cast(npt.NDArray[np.float64], np.asarray(self._y_hist, dtype=float))
         thr = 0.8
         ups = (y[1:] >= thr) & (y[:-1] < thr)
         reps = int(np.sum(ups))
         duration = len(y) * self.dt
         tempo = float(reps / duration) if duration > 0 else 0.0
-        rom = float(np.max(y) - np.min(y))
+        rom = float(np.max(y)) - float(np.min(y))
         peak = float(np.max(y))
         return SimulationMetrics(reps=reps, tempo=tempo, range_of_motion=rom, peak_force=peak)
