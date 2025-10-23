@@ -1,32 +1,50 @@
-\
 from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Literal
+
 from pydantic import BaseModel, Field
-from typing import List
-from dataclasses import dataclass
-from ..core.nmj import NMJ
+
+from ..core.nmj import NMJ, SimulationMetrics
+
 
 class SessionStartReq(BaseModel):
     exercise_id: str = Field(..., min_length=1)
-    dt: float = Field(0.01, gt=0, le=0.1)
+    dt: float = Field(0.01, gt=0.0, le=0.1)
+
 
 class SessionStartResp(BaseModel):
     session_id: str
 
+
 class SignalReq(BaseModel):
     u: float = Field(..., ge=0.0, le=1.0)
 
+
+class SignalResp(BaseModel):
+    y: float
+
+
 class BestCueResp(BaseModel):
-    cues: List[str]
+    cues: list[str]
+
 
 class PolicyOutcomeReq(BaseModel):
     cue_text: str
     success: float = Field(..., ge=0.0, le=1.0)
 
+
+class PolicyOutcomeResp(BaseModel):
+    status: Literal["ok"] = "ok"
+
+
 class SummaryReq(BaseModel):
     pass
 
+
 class SummaryResp(BaseModel):
-    metrics: dict
+    metrics: SimulationMetrics
+
 
 @dataclass
 class Session:
@@ -34,7 +52,4 @@ class Session:
     exercise_id: str
     dt: float
     nmj: NMJ
-    outputs: list = None
-    def __post_init__(self):
-        if self.outputs is None:
-            self.outputs = []
+    outputs: list[float] = field(default_factory=list)
