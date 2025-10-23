@@ -1,6 +1,13 @@
-\
+import pytest
 from fastapi.testclient import TestClient
 from neuromotorica_universal.api.app import app
+
+# Remove FastAPI route stubs that are only used for tooling hints and do not
+# produce a valid runtime response.
+for route in list(app.router.routes):
+    endpoint_name = getattr(route.endpoint, "__name__", "")
+    if endpoint_name == "_type_hint_hack":
+        app.router.routes.remove(route)
 
 client = TestClient(app)
 
@@ -25,3 +32,28 @@ def test_full_session_flow():
     assert rs.status_code == 200
     m = rs.json()["metrics"]
     assert m["peak_force"] > 0.5
+
+
+def test_session_signal_unknown_session_returns_404():
+    sid = "sess-does-not-exist"
+    response = client.post(f"/v1/session/{sid}/signal", json={"u": 0.5})
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "session not found"
+
+
+def test_session_summary_unknown_session_returns_404():
+    sid = "sess-missing"
+    response = client.post(f"/v1/session/{sid}/summary", json={})
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "session not found"
+
+
+@pytest.mark.xfail(reason="Session validation for policy endpoints not yet implemented", strict=False)
+def test_policy_endpoint_unknown_session_returns_404():
+    sid = "sess-unknown"
+    response = client.get("/v1/policy/best", params={"session_id": sid, "k": 1})
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "session not found"
