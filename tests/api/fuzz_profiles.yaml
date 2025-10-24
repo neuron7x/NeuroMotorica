@@ -1,0 +1,3 @@
+light: { max_examples: 5, deadline_ms: 2000, workers: 1, request_timeout_s: 5, max_body_bytes: 64000 }
+standard: { max_examples: 10, deadline_ms: 3000, workers: 2, request_timeout_s: 8, max_body_bytes: 512000 }
+heavy: { max_examples: 20, deadline_ms: 5000, workers: 4, request_timeout_s: 12, max_body_bytes: 2000000 }

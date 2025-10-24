@@ -1,0 +1,3 @@
+{
+  "policy.secrets.blocked": "Sensitive tokens detected; the request is blocked."
+}

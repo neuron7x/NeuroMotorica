@@ -1,0 +1,7 @@
+_default:
+  latency_ms_p95: { max_regression_pct: 30 }
+  latency_ms_avg: { max_regression_pct: 30 }
+  mem_peak_mb:    { max_regression_pct: 20 }
+thompson:
+  latency_ms_p95: { max_regression_pct: 20 }
+  mem_peak_mb:    { max_regression_pct: 10 }
